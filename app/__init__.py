@@ -446,3 +446,7 @@ def _seed_defaults(app):
 
     db.session.commit()
 
+
+# Top-level WSGI application instance (enables `gunicorn app:app` on Render, Railway, etc.)
+app = create_app()
+
