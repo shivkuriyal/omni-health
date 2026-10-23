@@ -2,8 +2,14 @@ import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-IS_VERCEL = bool(os.environ.get('VERCEL'))
-DATA_DIR = '/tmp' if IS_VERCEL else BASE_DIR
+IS_SERVERLESS = bool(
+    os.environ.get('VERCEL') or
+    os.environ.get('VERCEL_ENV') or
+    os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or
+    os.environ.get('LAMBDA_TASK_ROOT') or
+    not os.access(BASE_DIR, os.W_OK)
+)
+DATA_DIR = '/tmp' if IS_SERVERLESS else BASE_DIR
 
 def _get_database_uri():
     db_url = os.environ.get('DATABASE_URL')
@@ -11,7 +17,7 @@ def _get_database_uri():
         if db_url.startswith('postgres://'):
             db_url = db_url.replace('postgres://', 'postgresql://', 1)
         return db_url
-    if IS_VERCEL:
+    if IS_SERVERLESS:
         return 'sqlite:////tmp/omnihealth.db'
     return f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'omnihealth.db')}"
 

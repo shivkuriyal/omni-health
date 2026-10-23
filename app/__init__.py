@@ -22,8 +22,22 @@ def create_app(config_name=None):
         config_name = os.environ.get('FLASK_ENV', 'development')
 
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    is_serverless = bool(
+        os.environ.get('VERCEL') or
+        os.environ.get('VERCEL_ENV') or
+        os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or
+        os.environ.get('LAMBDA_TASK_ROOT') or
+        not os.access(base_dir, os.W_OK)
+    )
+    instance_dir = '/tmp/instance' if is_serverless else os.path.join(base_dir, 'instance')
+    try:
+        os.makedirs(instance_dir, exist_ok=True)
+    except Exception:
+        pass
+
     app = Flask(
         __name__,
+        instance_path=instance_dir,
         static_folder=os.path.join(base_dir, 'static'),
         template_folder=os.path.join(base_dir, 'templates')
     )
@@ -35,8 +49,11 @@ def create_app(config_name=None):
     jwt.init_app(app)
     CORS(app)
 
-    # Ensure upload directory exists
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # Ensure upload directory exists safely
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except Exception as e:
+        app.logger.warning(f"Upload directory creation skipped: {e}")
 
     # Register blueprints
     from app.routes.auth import auth_bp
@@ -55,11 +72,14 @@ def create_app(config_name=None):
     app.register_blueprint(patient_bp, url_prefix='/api/patient')
     app.register_blueprint(consent_bp, url_prefix='/api/consent')
 
-    # Create tables on first request
+    # Create tables and seed data safely on startup
     with app.app_context():
-        from app import models  # noqa: F401
-        db.create_all()
-        _seed_defaults(app)
+        try:
+            from app import models  # noqa: F401
+            db.create_all()
+            _seed_defaults(app)
+        except Exception as e:
+            app.logger.error(f"Database initialization error: {e}")
 
     return app
 
@@ -73,6 +93,10 @@ def _seed_defaults(app):
     )
     import bcrypt
     from datetime import date, datetime, timezone, timedelta
+
+    ADMIN_HASH = "$2b$12$CqNTYSy6t7vl3M9WICfU9eApdTE10jon44zc96fbPUSI/JbSQ6ee."  # admin123
+    DOC_HASH = "$2b$12$P5Gk5UbYR57gQuq0DX/iyOF79v37.2yZZSwPefrjio7ePHmmGoaPG"    # doctor123
+    PAT_HASH = "$2b$12$fcM.X1lzjEgQxe/YGifsd.H2qjILu.oxyw7q/Lpd/mM3JWzX.hZvO"    # patient123
 
     if SubscriptionPlan.query.count() == 0:
         plans = [
@@ -108,11 +132,10 @@ def _seed_defaults(app):
         db.session.commit()
 
     if SuperAdmin.query.count() == 0:
-        hashed = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         admin = SuperAdmin(
             name='Platform Super Admin',
             email='admin@omnihealth.com',
-            password_hash=hashed
+            password_hash=ADMIN_HASH
         )
         db.session.add(admin)
 
@@ -151,30 +174,28 @@ def _seed_defaults(app):
         db.session.flush()
 
         # Seed Hospital Admins
-        h_admin_hash = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         ha1 = HospitalAdmin(
             hospital_id=h1.id,
             name='Marcus Vance (Admin)',
             email='metro.admin@omnihealth.com',
-            password_hash=h_admin_hash,
+            password_hash=ADMIN_HASH,
             role='admin'
         )
         ha2 = HospitalAdmin(
             hospital_id=h2.id,
             name='Elena Rostova (Admin)',
             email='stjude.admin@omnihealth.com',
-            password_hash=h_admin_hash,
+            password_hash=ADMIN_HASH,
             role='admin'
         )
         db.session.add_all([ha1, ha2])
 
         # Seed Doctors
-        doc_hash = bcrypt.hashpw('doctor123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         doc1 = Doctor(
             hospital_id=h1.id,
             name='Dr. Sarah Jenkins, MD',
             email='doctor@omnihealth.com',
-            password_hash=doc_hash,
+            password_hash=DOC_HASH,
             specialization='Cardiology & Internal Medicine',
             license_number='MD-89241-MA',
             phone='+1-555-0133',
@@ -184,7 +205,7 @@ def _seed_defaults(app):
             hospital_id=h2.id,
             name='Dr. Marcus Chen, MD',
             email='marcus@omnihealth.com',
-            password_hash=doc_hash,
+            password_hash=DOC_HASH,
             specialization='Neurology & Critical Care',
             license_number='MD-77192-NY',
             phone='+1-555-0177',
@@ -194,12 +215,11 @@ def _seed_defaults(app):
         db.session.flush()
 
         # Seed Patient: John Doe
-        pat_hash = bcrypt.hashpw('patient123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         pat = Patient(
             name='John Doe',
             email='patient@omnihealth.com',
             phone='+1-555-0199',
-            password_hash=pat_hash,
+            password_hash=PAT_HASH,
             date_of_birth=date(1988, 6, 14),
             gender='Male',
             blood_group='O+',
