@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}OmniHealth-Rec — Own Your Health Data{% endblock %}
+
+{% block body %}
+<!-- ===== Navigation ===== -->
+<nav class="landing-nav">
+    <div class="nav-brand">
+        <div class="icon-circle">🏥</div>
+        <span>Omni<span style="color:var(--accent-400)">Health</span></span>
+    </div>
+    <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="/login" class="nav-link">Sign In</a>
+        <a href="/register" class="nav-link cta">Get Started</a>
+    </div>
+</nav>
+
+<!-- ===== Hero ===== -->
+<section class="landing-hero">
+    <div class="landing-container">
+        <div class="landing-grid">
+            <div class="landing-hero-content animate-fade-up">
+                <h1>
+                    Your Health.<br>
+                    Your <span class="gradient-text">Data</span>.<br>
+                    Your Control.
+                </h1>
+                <p>
+                    A universal, cloud-based Personal Health Record platform.
+                    Carry your complete medical history — illnesses, prescriptions, lab reports,
+                    and surgeries — across every hospital and doctor visit, securely.
+                </p>
+                <div class="landing-hero-actions">
+                    <a href="/register" class="btn btn-primary btn-lg">
+                        Create Free Account →
+                    </a>
+                    <a href="#features" class="btn btn-secondary btn-lg" style="background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.15);">
+                        Learn More
+                    </a>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:32px;">
+                    <div style="display:flex;">
+                        <div class="avatar sm" style="background:#2d8cff;margin-right:-8px;border:2px solid #0f172a;">A</div>
+                        <div class="avatar sm" style="background:#14b8a6;margin-right:-8px;border:2px solid #0f172a;">S</div>
+                        <div class="avatar sm" style="background:#f59e0b;margin-right:-8px;border:2px solid #0f172a;">R</div>
+                        <div class="avatar sm" style="background:#8b5cf6;border:2px solid #0f172a;">K</div>
+                    </div>
+                    <span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">
+                        <strong style="color:#fff;">2,400+</strong> patients trust OmniHealth
+                    </span>
+                </div>
+            </div>
+            <div class="animate-fade-up stagger-2" style="display:flex;justify-content:center;">
+                <!-- Dashboard preview card -->
+                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-xl);padding:24px;width:100%;max-width:420px;backdrop-filter:blur(8px);">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                        <div class="avatar" style="background:linear-gradient(135deg,#2d8cff,#14b8a6);">RP</div>
+                        <div>
+                            <div style="color:#fff;font-weight:600;font-size:0.95rem;">Rahul Patel</div>
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.8rem;">Patient ID: OH-29481</div>
+                        </div>
+                        <span class="badge badge-success" style="margin-left:auto;">Active</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div style="background:rgba(255,255,255,0.05);border-radius:var(--radius-md);padding:14px;">
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Records</div>
+                            <div style="color:#fff;font-size:1.4rem;font-weight:800;">47</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.05);border-radius:var(--radius-md);padding:14px;">
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Since</div>
+                            <div style="color:#fff;font-size:1.4rem;font-weight:800;">2018</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.05);border-radius:var(--radius-md);padding:14px;">
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Blood</div>
+                            <div style="color:#fff;font-size:1.4rem;font-weight:800;">B+</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.05);border-radius:var(--radius-md);padding:14px;">
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Allergies</div>
+                            <div style="color:#fff;font-size:1.4rem;font-weight:800;">3</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;background:rgba(45,140,255,0.1);border-radius:var(--radius-md);padding:12px;border:1px solid rgba(45,140,255,0.2);">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:0.85rem;">✨</span>
+                            <span style="color:var(--primary-300);font-size:0.82rem;font-weight:600;">AI Summary Ready</span>
+                        </div>
+                        <p style="color:rgba(255,255,255,0.5);font-size:0.78rem;margin-top:4px;line-height:1.5;">
+                            5-point clinical snapshot generated from 47 records spanning 8 years...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Features ===== -->
+<section class="landing-features" id="features">
+    <div class="landing-container">
+        <div class="section-title animate-fade-up">
+            <h2>Built for Modern Healthcare</h2>
+            <p>A platform that puts patients first — with enterprise-grade security and hospital-ready tools.</p>
+        </div>
+        <div class="grid grid-3">
+            <div class="feature-card animate-fade-up stagger-1">
+                <div class="feature-icon" style="background:var(--primary-50);color:var(--primary-600);">📋</div>
+                <h3>Universal Records</h3>
+                <p>Your health data is completely decoupled from any single hospital. It stays with you, forever.</p>
+            </div>
+            <div class="feature-card animate-fade-up stagger-2">
+                <div class="feature-icon" style="background:#ecfeff;color:var(--accent-600);">⏱️</div>
+                <h3>Clinical Timeline</h3>
+                <p>Doctors see your entire medical history in a beautiful, chronological timeline for instant context.</p>
+            </div>
+            <div class="feature-card animate-fade-up stagger-3">
+                <div class="feature-icon" style="background:var(--success-50);color:#16a34a;">🔐</div>
+                <h3>Consent-First Access</h3>
+                <p>Data is encrypted and access requires your explicit OTP or QR code consent — every single time.</p>
+            </div>
+            <div class="feature-card animate-fade-up stagger-1">
+                <div class="feature-icon" style="background:var(--warning-50);color:#d97706;">🏥</div>
+                <h3>Multi-Tenant SaaS</h3>
+                <p>Hospitals subscribe to the platform and get a whitelabeled portal with their own branding.</p>
+            </div>
+            <div class="feature-card animate-fade-up stagger-2">
+                <div class="feature-icon" style="background:#faf5ff;color:#7c3aed;">✨</div>
+                <h3>AI Clinical Summary</h3>
+                <p>An AI engine that distills years of medical records into a 5-bullet-point snapshot for doctors.</p>
+            </div>
+            <div class="feature-card animate-fade-up stagger-3">
+                <div class="feature-icon" style="background:var(--danger-50);color:#dc2626;">👨‍👩‍👧‍👦</div>
+                <h3>Family Profiles</h3>
+                <p>Manage health records for your entire family — children, parents, spouse — all from one account.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Pricing ===== -->
+<section class="pricing-section" id="pricing">
+    <div class="landing-container">
+        <div class="section-title animate-fade-up">
+            <h2>Plans for Every Hospital</h2>
+            <p>From small clinics to enterprise health networks — there's a plan that fits.</p>
+        </div>
+        <div class="grid grid-3">
+            <div class="pricing-card animate-fade-up stagger-1">
+                <h3 style="color:var(--gray-900);">Starter</h3>
+                <p class="text-muted text-sm">For small clinics</p>
+                <div class="pricing-price">
+                    <span class="currency">$</span>49<span class="period">/mo</span>
+                </div>
+                <ul class="pricing-features">
+                    <li>Up to 5 doctors</li>
+                    <li>200 patients/month</li>
+                    <li>Email support</li>
+                    <li>Basic analytics</li>
+                    <li>Standard branding</li>
+                </ul>
+                <a href="/register" class="btn btn-secondary w-full">Get Started</a>
+            </div>
+            <div class="pricing-card featured animate-fade-up stagger-2">
+                <div class="pricing-badge">Most Popular</div>
+                <h3 style="color:var(--gray-900);">Professional</h3>
+                <p class="text-muted text-sm">For mid-size hospitals</p>
+                <div class="pricing-price">
+                    <span class="currency">$</span>199<span class="period">/mo</span>
+                </div>
+                <ul class="pricing-features">
+                    <li>Up to 25 doctors</li>
+                    <li>2,000 patients/month</li>
+                    <li>Priority support</li>
+                    <li>AI Clinical Summary</li>
+                    <li>Custom whitelabeling</li>
+                </ul>
+                <a href="/register" class="btn btn-primary w-full">Start Free Trial</a>
+            </div>
+            <div class="pricing-card animate-fade-up stagger-3">
+                <h3 style="color:var(--gray-900);">Enterprise</h3>
+                <p class="text-muted text-sm">Unlimited scale</p>
+                <div class="pricing-price">
+                    <span class="currency">$</span>499<span class="period">/mo</span>
+                </div>
+                <ul class="pricing-features">
+                    <li>Unlimited doctors</li>
+                    <li>Unlimited patients</li>
+                    <li>Dedicated support & SLA</li>
+                    <li>Full API access</li>
+                    <li>Custom integrations</li>
+                </ul>
+                <a href="/register" class="btn btn-secondary w-full">Contact Sales</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer class="landing-footer">
+    <div class="landing-container">
+        <p>© 2026 OmniHealth-Rec. Built with ❤️ for better healthcare. <a href="#">Privacy Policy</a> · <a href="#">Terms</a></p>
+    </div>
+</footer>
+{% endblock %}

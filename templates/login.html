@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Sign In — OmniHealth-Rec{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">🏥</div>
+            <div class="auth-brand-text">Omni<span>Health</span></div>
+        </div>
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">Sign in to access your health dashboard</p>
+
+        <!-- Role Tabs -->
+        <div class="role-tabs" id="roleTabs">
+            <button class="role-tab active" data-role="patient" type="button">Patient</button>
+            <button class="role-tab" data-role="doctor" type="button">Doctor</button>
+            <button class="role-tab" data-role="hospital_admin" type="button">Hospital Admin</button>
+            <button class="role-tab" data-role="super_admin" type="button">Super Admin</button>
+        </div>
+
+        <!-- Quick Demo Switcher -->
+        <div style="background:var(--primary-50);border:1px solid var(--primary-200);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:18px;">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--primary-700);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">⚡ Quick Demo Login</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <button type="button" class="btn btn-ghost btn-sm demo-btn" onclick="fillDemo('patient', 'patient@omnihealth.com', 'patient123')" style="font-size:0.8rem;padding:4px 8px;background:#ffffff;border:1px solid var(--primary-200);">
+                    👤 John Doe (Patient)
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm demo-btn" onclick="fillDemo('doctor', 'doctor@omnihealth.com', 'doctor123')" style="font-size:0.8rem;padding:4px 8px;background:#ffffff;border:1px solid var(--primary-200);">
+                    🩺 Dr. Sarah (Doctor)
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm demo-btn" onclick="fillDemo('hospital_admin', 'metro.admin@omnihealth.com', 'admin123')" style="font-size:0.8rem;padding:4px 8px;background:#ffffff;border:1px solid var(--primary-200);">
+                    🏥 Metro Admin
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm demo-btn" onclick="fillDemo('super_admin', 'admin@omnihealth.com', 'admin123')" style="font-size:0.8rem;padding:4px 8px;background:#ffffff;border:1px solid var(--primary-200);">
+                    ⚡ Super Admin
+                </button>
+            </div>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-full btn-lg" id="loginBtn">
+                Sign In
+            </button>
+        </form>
+
+        <p class="auth-footer-text">
+            Don't have an account? <a href="/register">Create one</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Demo accounts map
+    const DEMO_CREDENTIALS = {
+        patient: { email: 'patient@omnihealth.com', pass: 'patient123' },
+        doctor: { email: 'doctor@omnihealth.com', pass: 'doctor123' },
+        hospital_admin: { email: 'metro.admin@omnihealth.com', pass: 'admin123' },
+        super_admin: { email: 'admin@omnihealth.com', pass: 'admin123' }
+    };
+
+    let selectedRole = 'patient';
+
+    function setRole(role) {
+        selectedRole = role;
+        document.querySelectorAll('.role-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.role === role);
+        });
+        if (DEMO_CREDENTIALS[role]) {
+            document.getElementById('loginEmail').value = DEMO_CREDENTIALS[role].email;
+            document.getElementById('loginPassword').value = DEMO_CREDENTIALS[role].pass;
+        }
+    }
+
+    function fillDemo(role, email, pass) {
+        setRole(role);
+        document.getElementById('loginEmail').value = email;
+        document.getElementById('loginPassword').value = pass;
+    }
+
+    document.querySelectorAll('.role-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            setRole(tab.dataset.role);
+        });
+    });
+
+    // Default to Patient
+    setRole('patient');
+
+    // Login form
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+
+        try {
+            const data = await API.post('/api/auth/login', {
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value,
+                role: selectedRole,
+            });
+
+            if (data) {
+                API.saveAuth(data.access_token, data.user, data.role);
+                Toast.show(`Welcome back, ${data.user.name}!`, 'success');
+
+                // Route based on role
+                const routes = {
+                    super_admin: '/admin/panel',
+                    hospital_admin: '/dashboard',
+                    doctor: '/doctor/timeline',
+                    patient: '/patient/records',
+                };
+                setTimeout(() => {
+                    window.location.href = routes[data.role] || '/dashboard';
+                }, 500);
+            }
+        } catch (err) {
+            // Toast already shown by API module
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        }
+    });
+</script>
+{% endblock %}

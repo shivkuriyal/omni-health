@@ -1,0 +1,706 @@
+{% extends "base.html" %}
+{% block title %}Hospital Admin Portal — OmniHealth-Rec{% endblock %}
+
+{% block body %}
+<div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon" id="hospitalBrandIcon">🏥</div>
+            <div class="sidebar-brand-text" id="hospitalBrandName">Metro<span>General</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-label">Management</div>
+            <a class="sidebar-link active" href="#overviewTab" onclick="switchTab('overviewTab')">
+                <span class="icon">📊</span> Overview & Stats
+            </a>
+            <a class="sidebar-link" href="#doctorsTab" onclick="switchTab('doctorsTab')">
+                <span class="icon">🩺</span> Doctors & Staff
+            </a>
+            <a class="sidebar-link" href="#brandingTab" onclick="switchTab('brandingTab')">
+                <span class="icon">🎨</span> Whitelabel & Branding
+            </a>
+            <a class="sidebar-link" href="#billingTab" onclick="switchTab('billingTab')">
+                <span class="icon">💳</span> Subscription & Billing
+            </a>
+            <a class="sidebar-link" href="#recordsTab" onclick="switchTab('recordsTab')">
+                <span class="icon">📋</span> Hospital Records
+            </a>
+            <div class="sidebar-section-label">Account</div>
+            <a class="sidebar-link" onclick="API.logout()">
+                <span class="icon">🚪</span> Sign Out
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="avatar" id="adminAvatar" style="background:var(--primary-600);">A</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name" id="adminSidebarName">Hospital Admin</div>
+                    <div class="sidebar-user-role" id="adminSidebarRole">Metro General</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="btn btn-ghost btn-icon" onclick="toggleSidebar()" style="display:none;" id="menuBtn">☰</button>
+                <div>
+                    <div class="topbar-title" id="pageTitle">Hospital Administration</div>
+                    <div class="topbar-breadcrumb">
+                        <span id="topbarHospitalName">Metro General Hospital</span>
+                        <span class="sep">›</span>
+                        <span id="breadcrumbSection">Overview</span>
+                    </div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <span class="badge badge-success" id="subStatusBadge">● Subscription Active</span>
+                <button class="btn btn-primary btn-sm" onclick="Modal.open('addDoctorModal')">
+                    + Add Doctor
+                </button>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Tab 1: Overview -->
+            <div id="overviewTab" class="tab-pane active">
+                <!-- Stats Grid -->
+                <div class="stats-grid mb-lg animate-fade-up">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Active Doctors</span>
+                            <span class="stat-card-icon">🩺</span>
+                        </div>
+                        <div class="stat-card-value" id="statDoctors">0</div>
+                        <div class="stat-card-change text-muted" id="statDoctorQuota">Quota: 0 / 25 used</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Hospital Encounters</span>
+                            <span class="stat-card-icon">📋</span>
+                        </div>
+                        <div class="stat-card-value" id="statRecords">0</div>
+                        <div class="stat-card-change positive">✓ Lifelong Records Linked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Current Plan</span>
+                            <span class="stat-card-icon">⭐</span>
+                        </div>
+                        <div class="stat-card-value" id="statPlanName" style="font-size:1.4rem;">Professional</div>
+                        <div class="stat-card-change" id="statPlanPrice">$199 / month</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Tenant Whitelabel</span>
+                            <span class="stat-card-icon">🎨</span>
+                        </div>
+                        <div class="stat-card-value" id="statAccentPreview" style="font-size:1.3rem;display:flex;align-items:center;gap:8px;">
+                            <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#0ea5e9;" id="statColorDot"></span>
+                            <span id="statColorHex">#0ea5e9</span>
+                        </div>
+                        <div class="stat-card-change positive">Custom Branding Active</div>
+                    </div>
+                </div>
+
+                <!-- Hospital Hero Preview -->
+                <div class="card mb-lg animate-fade-up stagger-1">
+                    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <h3 style="margin:0;">Hospital Profile & Live Tenant Theme</h3>
+                        <button class="btn btn-secondary btn-sm" onclick="switchTab('brandingTab')">
+                            🎨 Customize Theme
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+                            <div class="avatar xl" id="hospitalHeroLogo" style="background:var(--primary-600);color:#ffffff;font-size:1.8rem;border-radius:var(--radius-lg);">
+                                🏥
+                            </div>
+                            <div style="flex:1;">
+                                <h2 style="margin:0 0 6px 0;" id="heroHospitalTitle">Metro General Hospital</h2>
+                                <p class="text-muted" style="margin:0 0 10px 0;font-style:italic;" id="heroHospitalTagline">Compassionate care, universal excellence</p>
+                                <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.85rem;color:var(--gray-600);">
+                                    <span id="heroHospitalEmail">✉ contact@metrogeneral.org</span>
+                                    <span id="heroHospitalPhone">📞 +1-800-555-0144</span>
+                                    <span id="heroHospitalAddress">📍 Springfield Medical District</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Doctor Roster Preview -->
+                <div class="card animate-fade-up stagger-2">
+                    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <h3 style="margin:0;">Active Attending Physicians</h3>
+                        <button class="btn btn-primary btn-sm" onclick="Modal.open('addDoctorModal')">+ Add Doctor</button>
+                    </div>
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Doctor</th>
+                                        <th>Specialization</th>
+                                        <th>License Number</th>
+                                        <th>Contact</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="overviewDoctorsBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Doctors & Staff -->
+            <div id="doctorsTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">Physician & Clinical Staff Directory</h3>
+                        <p class="text-sm text-muted">Doctors registered under this hospital tenant with access to the timeline consultation portal</p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="Modal.open('addDoctorModal')">+ Register New Doctor</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Doctor Name</th>
+                                        <th>Specialization</th>
+                                        <th>License ID</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="doctorsTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Whitelabel & Branding Customizer -->
+            <div id="brandingTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">Whitelabel & Portal Appearance</h3>
+                        <p class="text-sm text-muted">Customize how your patient & doctor portals appear with your hospital branding</p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="saveBranding()">Save Branding Settings</button>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+                    <!-- Branding Settings Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 style="margin:0;">Portal Appearance Settings</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Hospital Display Name *</label>
+                                <input type="text" class="form-input" id="brandHospitalName" placeholder="e.g., Metro General Hospital">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Brand Tagline / Slogan</label>
+                                <input type="text" class="form-input" id="brandTagline" placeholder="e.g., Excellence in Patient-Centered Care">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Hospital Accent Theme Color</label>
+                                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                                    <input type="color" id="brandColorPicker" value="#0ea5e9" style="width:48px;height:40px;padding:2px;border:none;border-radius:var(--radius-sm);cursor:pointer;">
+                                    <input type="text" class="form-input" id="brandColorHex" value="#0ea5e9" style="width:120px;font-family:var(--font-mono);">
+                                </div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    <button type="button" class="btn btn-ghost btn-sm" style="background:#0ea5e9;color:#fff;padding:2px 8px;" onclick="setColor('#0ea5e9')">Sky Blue</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" style="background:#059669;color:#fff;padding:2px 8px;" onclick="setColor('#059669')">Emerald</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" style="background:#6366f1;color:#fff;padding:2px 8px;" onclick="setColor('#6366f1')">Indigo</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" style="background:#8b5cf6;color:#fff;padding:2px 8px;" onclick="setColor('#8b5cf6')">Purple</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" style="background:#dc2626;color:#fff;padding:2px 8px;" onclick="setColor('#dc2626')">Crimson</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Logo Image URL</label>
+                                <input type="url" class="form-input" id="brandLogoUrl" placeholder="https://example.com/logo.png">
+                                <p class="text-xs text-muted" style="margin-top:4px;">Appears on topbar and reports generated for patients</p>
+                            </div>
+                            <button class="btn btn-primary w-full" onclick="saveBranding()">
+                                Apply Branding Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Whitelabel Preview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 style="margin:0;">Live Whitelabel Preview</h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-xs text-muted mb-md">This is a live mockup of how your hospital branding appears to attending doctors and visiting patients:</p>
+                            
+                            <!-- Mock Portal Header -->
+                            <div id="previewHeader" style="border:1px solid var(--gray-200);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+                                <div id="previewTopBar" style="background:#0ea5e9;padding:14px 20px;color:#ffffff;display:flex;align-items:center;justify-content:space-between;">
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <span style="font-size:1.4rem;">🏥</span>
+                                        <div>
+                                            <div style="font-weight:700;font-size:1rem;" id="previewHospitalTitle">Metro General Hospital</div>
+                                            <div style="font-size:0.75rem;opacity:0.9;" id="previewHospitalTagline">Compassionate care, universal excellence</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge" style="background:rgba(255,255,255,0.25);color:#fff;">OmniHealth Powered</span>
+                                </div>
+                                <div style="padding:20px;background:#ffffff;">
+                                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                                        <div style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">🩺</div>
+                                        <div>
+                                            <div style="font-size:0.9rem;font-weight:600;">Dr. Sarah Jenkins, MD</div>
+                                            <div style="font-size:0.75rem;color:var(--gray-500);">Cardiology & Internal Medicine</div>
+                                        </div>
+                                    </div>
+                                    <div style="padding:10px;border-radius:var(--radius-sm);background:#f8fafc;border:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-600);">
+                                        Viewing universal patient timeline via authorized time-boxed OTP consent.
+                                    </div>
+                                    <div style="margin-top:14px;">
+                                        <button id="previewButton" class="btn btn-sm" style="background:#0ea5e9;color:#ffffff;border:none;">
+                                            Authorize Patient Timeline
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Subscription & Billing -->
+            <div id="billingTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">SaaS Subscription & Billing Invoices</h3>
+                        <p class="text-sm text-muted">Manage your hospital tier, quota utilization, and automated invoicing</p>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;margin-bottom:24px;">
+                    <!-- Plan Details -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 style="margin:0;">Active Subscription</h4>
+                        </div>
+                        <div class="card-body">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                                <h3 style="margin:0;color:var(--primary-700);" id="billingPlanTitle">Professional</h3>
+                                <span class="badge badge-success">Active</span>
+                            </div>
+                            <div style="font-size:1.8rem;font-weight:700;margin-bottom:6px;" id="billingPlanRate">$199<span style="font-size:0.9rem;font-weight:400;color:var(--gray-500);"> / mo</span></div>
+                            <p class="text-sm text-muted mb-md" id="billingPlanDesc">For mid-size hospitals — up to 25 doctors</p>
+
+                            <hr style="border:none;border-top:1px solid var(--gray-200);margin:16px 0;">
+
+                            <div style="font-size:0.85rem;line-height:1.8;">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="text-muted">Doctor Limit:</span>
+                                    <span class="font-semibold" id="billingDoctorQuota">25 Doctors</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="text-muted">Monthly Patients:</span>
+                                    <span class="font-semibold" id="billingPatientQuota">2,000</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="text-muted">Whitelabel Customizer:</span>
+                                    <span style="color:#10b981;font-weight:600;">✓ Enabled</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="text-muted">AI Clinical Summary:</span>
+                                    <span style="color:#10b981;font-weight:600;">✓ Enabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoices Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 style="margin:0;">Invoice History</h4>
+                        </div>
+                        <div class="card-body" style="padding:0;">
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Invoice Period</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Paid Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="billingInvoicesBody">
+                                        <!-- Filled dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Hospital Records -->
+            <div id="recordsTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">Clinical Records Generated at this Facility</h3>
+                        <p class="text-sm text-muted">All medical encounters created by your doctors</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Encounter Title</th>
+                                        <th>Type</th>
+                                        <th>Attending Doctor</th>
+                                        <th>Severity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hospitalRecordsBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Add Doctor Modal -->
+<div class="modal-overlay" id="addDoctorModal">
+    <div class="modal" style="max-width:540px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Register Attending Doctor</h3>
+            <button class="modal-close" onclick="Modal.close('addDoctorModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Doctor Full Name *</label>
+                <input type="text" class="form-input" id="newDocName" placeholder="e.g., Dr. Robert House, MD" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Specialization / Department *</label>
+                <input type="text" class="form-input" id="newDocSpec" placeholder="e.g., Cardiology, Diagnostics, Pediatrics" required>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Medical License Number *</label>
+                    <input type="text" class="form-input" id="newDocLicense" placeholder="e.g., MD-88219-IL" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Phone</label>
+                    <input type="tel" class="form-input" id="newDocPhone" placeholder="+1-555-0122">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Account Email Address *</label>
+                <input type="email" class="form-input" id="newDocEmail" placeholder="doctor@hospital.org" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Initial Password *</label>
+                <input type="password" class="form-input" id="newDocPassword" placeholder="••••••••" required>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="Modal.close('addDoctorModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitAddDoctor()" id="saveDoctorBtn">Add Doctor to Staff</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentHospital = null;
+    let doctorsList = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!requireAuth(['hospital_admin'])) return;
+        await loadHospitalProfile();
+        await loadDoctors();
+        await loadBilling();
+        await loadHospitalRecords();
+    });
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-pane').forEach(el => {
+            el.classList.add('hidden');
+            el.classList.remove('active');
+        });
+        const target = document.getElementById(tabId);
+        if (target) {
+            target.classList.remove('hidden');
+            target.classList.add('active');
+        }
+
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        const activeLink = document.querySelector(`.sidebar-link[href="#${tabId}"]`);
+        if (activeLink) activeLink.classList.add('active');
+
+        const titles = {
+            overviewTab: 'Overview & Statistics',
+            doctorsTab: 'Staff & Doctors',
+            brandingTab: 'Whitelabel & Branding Customizer',
+            billingTab: 'Subscription & Billing Invoices',
+            recordsTab: 'Hospital Clinical Records'
+        };
+        document.getElementById('breadcrumbSection').textContent = titles[tabId] || 'Hospital';
+    }
+
+    async function loadHospitalProfile() {
+        try {
+            const data = await API.get('/api/hospital/profile');
+            if (!data) return;
+            currentHospital = data.hospital;
+            const h = currentHospital;
+
+            document.getElementById('topbarHospitalName').textContent = h.name;
+            document.getElementById('adminSidebarRole').textContent = h.name;
+            document.getElementById('heroHospitalTitle').textContent = h.name;
+            document.getElementById('hospitalBrandName').innerHTML = `${h.name.split(' ')[0]}<span>${h.name.split(' ').slice(1).join('') || 'Portal'}</span>`;
+            document.getElementById('heroHospitalTagline').textContent = h.tagline || 'Excellence in universal patient care';
+            document.getElementById('heroHospitalEmail').textContent = `✉ ${h.email || 'contact@hospital.org'}`;
+            document.getElementById('heroHospitalPhone').textContent = `📞 ${h.phone || 'Phone on file'}`;
+            document.getElementById('heroHospitalAddress').textContent = `📍 ${h.address || 'Medical Campus'}`;
+
+            // Branding Inputs
+            document.getElementById('brandHospitalName').value = h.name;
+            document.getElementById('brandTagline').value = h.tagline || '';
+            document.getElementById('brandLogoUrl').value = h.logo_url || '';
+            setColor(h.accent_color || '#0ea5e9');
+
+            // Plan Info
+            if (h.plan) {
+                document.getElementById('statPlanName').textContent = h.plan.name;
+                document.getElementById('statPlanPrice').textContent = `$${h.plan.price_monthly} / month`;
+                document.getElementById('statDoctorQuota').textContent = `Quota: Up to ${h.plan.max_doctors} doctors`;
+            }
+
+            // Sync Analytics
+            const analytics = await API.get('/api/hospital/analytics');
+            if (analytics) {
+                document.getElementById('statDoctors').textContent = analytics.total_doctors;
+                document.getElementById('statRecords').textContent = analytics.total_records;
+            }
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function setColor(hex) {
+        document.getElementById('brandColorPicker').value = hex;
+        document.getElementById('brandColorHex').value = hex;
+        document.getElementById('statColorDot').style.background = hex;
+        document.getElementById('statColorHex').textContent = hex;
+
+        // Update live preview
+        document.getElementById('previewTopBar').style.background = hex;
+        document.getElementById('previewButton').style.background = hex;
+    }
+
+    document.getElementById('brandColorPicker').addEventListener('input', (e) => {
+        setColor(e.target.value);
+    });
+
+    document.getElementById('brandHospitalName').addEventListener('input', (e) => {
+        document.getElementById('previewHospitalTitle').textContent = e.target.value || 'Hospital Portal';
+    });
+
+    document.getElementById('brandTagline').addEventListener('input', (e) => {
+        document.getElementById('previewHospitalTagline').textContent = e.target.value;
+    });
+
+    async function saveBranding() {
+        const body = {
+            name: document.getElementById('brandHospitalName').value.trim(),
+            tagline: document.getElementById('brandTagline').value.trim(),
+            accent_color: document.getElementById('brandColorHex').value.trim(),
+            logo_url: document.getElementById('brandLogoUrl').value.trim(),
+        };
+
+        try {
+            const data = await API.put('/api/hospital/branding', body);
+            if (data) {
+                Toast.show('Hospital branding updated!', 'success');
+                await loadHospitalProfile();
+            }
+        } catch (err) {}
+    }
+
+    async function loadDoctors() {
+        try {
+            const data = await API.get('/api/hospital/doctors');
+            if (!data) return;
+            doctorsList = data.doctors || [];
+
+            // Overview table (first 5)
+            const overBody = document.getElementById('overviewDoctorsBody');
+            overBody.innerHTML = doctorsList.slice(0, 5).map(d => `
+                <tr>
+                    <td class="font-semibold">Dr. ${d.name}</td>
+                    <td><span class="badge badge-primary">${d.specialization || 'General'}</span></td>
+                    <td style="font-family:var(--font-mono);font-size:0.85rem;">${d.license_number || '—'}</td>
+                    <td>${d.email}</td>
+                    <td><span class="badge ${d.is_active ? 'badge-success' : 'badge-danger'}">${d.is_active ? 'Active' : 'Inactive'}</span></td>
+                </tr>
+            `).join('');
+
+            // Full directory table
+            const fullBody = document.getElementById('doctorsTableBody');
+            fullBody.innerHTML = doctorsList.map(d => `
+                <tr>
+                    <td class="font-semibold">Dr. ${d.name}</td>
+                    <td><span class="badge badge-primary">${d.specialization || 'General'}</span></td>
+                    <td style="font-family:var(--font-mono);font-size:0.85rem;">${d.license_number || '—'}</td>
+                    <td>${d.email}</td>
+                    <td>${d.phone || '—'}</td>
+                    <td><span class="badge ${d.is_active ? 'badge-success' : 'badge-danger'}">${d.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        ${d.is_active ? `
+                            <button class="btn btn-ghost btn-sm" onclick="deactivateDoctor('${d.id}')" style="color:var(--danger-600);padding:4px 8px;">
+                                Deactivate
+                            </button>
+                        ` : '<span class="text-xs text-muted">Deactivated</span>'}
+                    </td>
+                </tr>
+            `).join('');
+
+        } catch (err) {}
+    }
+
+    async function submitAddDoctor() {
+        const name = document.getElementById('newDocName').value.trim();
+        const email = document.getElementById('newDocEmail').value.trim();
+        const password = document.getElementById('newDocPassword').value.trim();
+        const spec = document.getElementById('newDocSpec').value.trim();
+        const license = document.getElementById('newDocLicense').value.trim();
+        const phone = document.getElementById('newDocPhone').value.trim();
+
+        if (!name || !email || !password || !spec) {
+            return Toast.show('Please fill in all required fields', 'warning');
+        }
+
+        const btn = document.getElementById('saveDoctorBtn');
+        btn.disabled = true;
+        btn.textContent = 'Registering…';
+
+        try {
+            const data = await API.post('/api/hospital/doctors', {
+                name, email, password,
+                specialization: spec,
+                license_number: license,
+                phone: phone
+            });
+
+            if (data && data.doctor) {
+                Toast.show(`Dr. ${name} registered successfully!`, 'success');
+                Modal.close('addDoctorModal');
+                document.getElementById('newDocName').value = '';
+                document.getElementById('newDocEmail').value = '';
+                document.getElementById('newDocPassword').value = '';
+                document.getElementById('newDocSpec').value = '';
+                document.getElementById('newDocLicense').value = '';
+                document.getElementById('newDocPhone').value = '';
+                await loadDoctors();
+                await loadHospitalProfile();
+            }
+        } catch (err) {} finally {
+            btn.disabled = false;
+            btn.textContent = 'Add Doctor to Staff';
+        }
+    }
+
+    async function deactivateDoctor(id) {
+        if (!confirm('Deactivate this doctor\'s access to the clinical portal?')) return;
+        try {
+            await API.delete(`/api/hospital/doctors/${id}`);
+            Toast.show('Doctor deactivated', 'info');
+            await loadDoctors();
+        } catch (err) {}
+    }
+
+    async function loadBilling() {
+        try {
+            const data = await API.get('/api/hospital/billing');
+            if (!data) return;
+
+            const sub = data.subscription;
+            if (sub && sub.plan) {
+                document.getElementById('billingPlanTitle').textContent = sub.plan.name;
+                document.getElementById('billingPlanRate').innerHTML = `$${sub.plan.price_monthly}<span style="font-size:0.9rem;font-weight:400;color:var(--gray-500);"> / mo</span>`;
+                document.getElementById('billingPlanDesc').textContent = sub.plan.description;
+                document.getElementById('billingDoctorQuota').textContent = `${sub.plan.max_doctors} Doctors`;
+                document.getElementById('billingPatientQuota').textContent = `${sub.plan.max_patients_monthly} / mo`;
+            }
+
+            const tbody = document.getElementById('billingInvoicesBody');
+            if (data.invoices && data.invoices.length) {
+                tbody.innerHTML = data.invoices.map(i => `
+                    <tr>
+                        <td class="font-semibold">${formatDate(i.billing_period_start)} – ${formatDate(i.billing_period_end)}</td>
+                        <td class="font-semibold">$${i.amount.toFixed(2)} ${i.currency}</td>
+                        <td><span class="badge ${i.status === 'paid' ? 'badge-success' : 'badge-warning'}">${i.status.toUpperCase()}</span></td>
+                        <td>${formatDate(i.paid_at) || 'Pending'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No invoices recorded yet.</td></tr>';
+            }
+        } catch (err) {}
+    }
+
+    async function loadHospitalRecords() {
+        try {
+            const data = await API.get('/api/hospital/records');
+            if (!data) return;
+            const records = data.records || [];
+            const tbody = document.getElementById('hospitalRecordsBody');
+
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No clinical encounters recorded at this facility yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = records.map(r => `
+                <tr>
+                    <td>${formatDate(r.record_date)}</td>
+                    <td class="font-semibold">${r.title}</td>
+                    <td><span class="badge badge-primary">${r.record_type}</span></td>
+                    <td>Dr. ${r.doctor ? r.doctor.name : 'Staff'}</td>
+                    <td>${severityBadge(r.severity)}</td>
+                </tr>
+            `).join('');
+
+        } catch (err) {}
+    }
+</script>
+{% endblock %}

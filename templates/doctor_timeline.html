@@ -1,0 +1,537 @@
+{% extends "base.html" %}
+{% block title %}Patient Timeline — Doctor View{% endblock %}
+
+{% block body %}
+<div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">🏥</div>
+            <div class="sidebar-brand-text">Omni<span>Health</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-label">Clinical</div>
+            <a class="sidebar-link active" href="/doctor/timeline">
+                <span class="icon">⏱️</span> Patient Timeline
+            </a>
+            <a class="sidebar-link" href="/dashboard">
+                <span class="icon">📊</span> Dashboard
+            </a>
+            <div class="sidebar-section-label">Account</div>
+            <a class="sidebar-link" onclick="API.logout()">
+                <span class="icon">🚪</span> Sign Out
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="avatar" id="sidebarAvatar" style="background:var(--primary-500);">D</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+                    <div class="sidebar-user-role">Doctor</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="btn btn-ghost btn-icon" onclick="toggleSidebar()" style="display:none;" id="menuBtn">☰</button>
+                <div>
+                    <div class="topbar-title">Patient Timeline</div>
+                    <div class="topbar-breadcrumb">
+                        <span>Clinical</span>
+                        <span class="sep">›</span>
+                        <span>Timeline View</span>
+                    </div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-search">
+                    <span class="icon">🔍</span>
+                    <input type="text" placeholder="Search records…" id="searchInput">
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Step 1: Request Consent -->
+            <div id="consentSection">
+                <div class="consent-card animate-fade-up" style="max-width:560px;margin:40px auto;">
+                    <div style="font-size:2.5rem;margin-bottom:16px;">🔐</div>
+                    <h2 style="margin-bottom:8px;">Request Patient Access</h2>
+                    <p class="text-muted" style="margin-bottom:24px;">
+                        Enter the patient's email or phone to request consent.
+                        They will receive an OTP to authorize access.
+                    </p>
+                    <div class="form-group" style="max-width:340px;margin:0 auto;">
+                        <input type="text" class="form-input" id="patientLookup"
+                               placeholder="Patient email or phone" style="text-align:center;">
+                    </div>
+                    <button class="btn btn-primary btn-lg" onclick="requestConsent()" id="consentBtn" style="margin-top:16px;">
+                        🔐 Request Consent
+                    </button>
+
+                    <!-- OTP Verification (shown after request) -->
+                    <div id="otpSection" class="hidden" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--primary-200);">
+                        <p class="font-semibold" style="margin-bottom:4px;">OTP Verification</p>
+                        <p class="text-sm text-muted" style="margin-bottom:16px;">Enter the 6-digit code sent to the patient</p>
+                        <div class="otp-input-group">
+                            <input type="text" class="otp-input" maxlength="1" data-idx="0">
+                            <input type="text" class="otp-input" maxlength="1" data-idx="1">
+                            <input type="text" class="otp-input" maxlength="1" data-idx="2">
+                            <input type="text" class="otp-input" maxlength="1" data-idx="3">
+                            <input type="text" class="otp-input" maxlength="1" data-idx="4">
+                            <input type="text" class="otp-input" maxlength="1" data-idx="5">
+                        </div>
+                        <button class="btn btn-accent btn-lg" onclick="verifyOTP()" id="verifyBtn">
+                            ✓ Verify & View Records
+                        </button>
+                        <p class="text-sm text-muted" style="margin-top:12px;" id="otpHint"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Patient Timeline (shown after consent) -->
+            <div id="timelineSection" class="hidden">
+                <!-- Patient Summary Header -->
+                <div class="patient-summary mb-lg animate-fade-up" id="patientSummary">
+                    <!-- Filled dynamically -->
+                </div>
+
+                <!-- AI Summary -->
+                <div class="ai-summary-box mb-lg animate-fade-up stagger-1" id="aiSummaryBox" style="display:none;">
+                    <ul id="aiSummaryList"></ul>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="flex items-center justify-between mb-md animate-fade-up stagger-2">
+                    <div class="flex items-center gap-md">
+                        <h3 style="margin:0;">Medical Timeline</h3>
+                        <div id="recordCount" class="badge badge-primary">0 records</div>
+                    </div>
+                    <div class="flex items-center gap-sm">
+                        <select class="form-select" id="filterType" style="width:160px;padding:8px 12px;font-size:0.82rem;">
+                            <option value="">All Types</option>
+                            <option value="diagnosis">Diagnosis</option>
+                            <option value="prescription">Prescription</option>
+                            <option value="lab">Lab Results</option>
+                            <option value="surgery">Surgery</option>
+                            <option value="vaccination">Vaccination</option>
+                            <option value="general">General</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="generateAISummary()">
+                            ✨ AI Summary
+                        </button>
+                        <button class="btn btn-accent btn-sm" onclick="Modal.open('addRecordModal')">
+                            + Add Record
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline" id="timelineContainer">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Record Modal -->
+<div class="modal-overlay" id="addRecordModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add Medical Record</h3>
+            <button class="modal-close" onclick="Modal.close('addRecordModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Record Type</label>
+                <select class="form-select" id="newRecordType">
+                    <option value="diagnosis">Diagnosis</option>
+                    <option value="prescription">Prescription</option>
+                    <option value="lab">Lab Results</option>
+                    <option value="surgery">Surgery</option>
+                    <option value="vaccination">Vaccination</option>
+                    <option value="general">General</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="newRecordTitle" placeholder="e.g., Annual Blood Work">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-input" id="newRecordDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Severity</label>
+                    <select class="form-select" id="newRecordSeverity">
+                        <option value="low">Low</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Diagnosis Notes</label>
+                <textarea class="form-textarea" id="newRecordDiagnosis" placeholder="Clinical findings…"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Prescription</label>
+                <textarea class="form-textarea" id="newRecordPrescription" placeholder="Medications, dosage, frequency…" style="min-height:70px;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="Modal.close('addRecordModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="addRecord()">Save Record</button>
+        </div>
+    </div>
+</div>
+
+<!-- Record Detail Modal -->
+<div class="modal-overlay" id="recordDetailModal">
+    <div class="modal" style="max-width:600px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="detailTitle">Record Detail</h3>
+            <button class="modal-close" onclick="Modal.close('recordDetailModal')">✕</button>
+        </div>
+        <div class="modal-body" id="detailBody">
+            <!-- Filled dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // State
+    let consentId = null;
+    let currentPatientId = null;
+    let currentOTP = null;
+    let allRecords = [];
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!requireAuth(['doctor'])) return;
+        const user = API.getUser();
+        if (user) {
+            document.getElementById('sidebarName').textContent = user.name || 'Doctor';
+            const av = document.getElementById('sidebarAvatar');
+            av.textContent = getInitials(user.name);
+            av.style.background = getAvatarColor(user.name);
+        }
+        // Set default date
+        document.getElementById('newRecordDate').value = new Date().toISOString().split('T')[0];
+
+        // Check if there are active authorized consultations already
+        checkActiveConsents();
+    });
+
+    async function checkActiveConsents() {
+        try {
+            const data = await API.get('/api/consent/active');
+            if (data && data.consents && data.consents.length > 0) {
+                const c = data.consents[0];
+                const activeBanner = document.createElement('div');
+                activeBanner.style.cssText = 'background:linear-gradient(135deg,rgba(14,165,233,0.1),rgba(99,102,241,0.1));border:1px solid var(--primary-300);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:24px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:16px;';
+                activeBanner.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span style="font-size:1.8rem;">🟢</span>
+                        <div>
+                            <div style="font-weight:700;color:var(--gray-900);">Active Authorized Patient Session Available</div>
+                            <div style="font-size:0.85rem;color:var(--gray-600);">You have authorized consent granted for John Doe (UHID-${c.patient_id.slice(0,8).toUpperCase()})</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="currentPatientId='${c.patient_id}'; loadTimeline('${c.patient_id}')">
+                        Open Timeline →
+                    </button>
+                `;
+                const consentCard = document.querySelector('.consent-card');
+                if (consentCard) {
+                    consentCard.parentNode.insertBefore(activeBanner, consentCard);
+                }
+            }
+        } catch (err) {}
+    }
+
+
+    // OTP input auto-advance
+    document.querySelectorAll('.otp-input').forEach((inp, idx, all) => {
+        inp.addEventListener('input', (e) => {
+            if (e.target.value && idx < all.length - 1) {
+                all[idx + 1].focus();
+            }
+        });
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                all[idx - 1].focus();
+            }
+        });
+    });
+
+    // Request Consent
+    async function requestConsent() {
+        const lookup = document.getElementById('patientLookup').value.trim();
+        if (!lookup) return Toast.show('Enter patient email or phone', 'warning');
+
+        const btn = document.getElementById('consentBtn');
+        btn.disabled = true;
+        btn.textContent = 'Requesting…';
+
+        try {
+            const body = {};
+            if (lookup.includes('@')) body.patient_email = lookup;
+            else body.patient_phone = lookup;
+
+            const data = await API.post('/api/consent/request', body);
+            if (data) {
+                consentId = data.consent_id;
+                currentOTP = data.otp; // Demo only
+                document.getElementById('otpSection').classList.remove('hidden');
+                document.getElementById('otpHint').textContent = `Demo OTP: ${data.otp}`;
+                Toast.show(`Consent request sent to ${data.patient_name}`, 'success');
+            }
+        } catch (err) {} finally {
+            btn.disabled = false;
+            btn.textContent = '🔐 Request Consent';
+        }
+    }
+
+    // Verify OTP
+    async function verifyOTP() {
+        const otpDigits = Array.from(document.querySelectorAll('.otp-input'))
+            .map(i => i.value).join('');
+        if (otpDigits.length < 6) return Toast.show('Enter complete 6-digit OTP', 'warning');
+
+        try {
+            const data = await API.post('/api/consent/verify', {
+                consent_id: consentId,
+                otp: otpDigits,
+            });
+            if (data) {
+                Toast.show('Access granted! Loading timeline…', 'success');
+                currentPatientId = data.consent_id; // Use the consent to find patient
+                // Fetch timeline via active consents
+                const consents = await API.get('/api/consent/active');
+                if (consents && consents.consents.length > 0) {
+                    const c = consents.consents.find(x => x.id === consentId) || consents.consents[0];
+                    currentPatientId = c.patient_id;
+                    loadTimeline(currentPatientId);
+                }
+            }
+        } catch (err) {}
+    }
+
+    // Load Timeline
+    async function loadTimeline(patientId) {
+        document.getElementById('consentSection').classList.add('hidden');
+        document.getElementById('timelineSection').classList.remove('hidden');
+
+        try {
+            const data = await API.get(`/api/doctor/patients/${patientId}/timeline`);
+            if (!data) return;
+
+            const p = data.patient;
+            allRecords = data.timeline || [];
+
+            // Render patient summary
+            document.getElementById('patientSummary').innerHTML = `
+                <div style="display:flex;align-items:center;gap:20px;position:relative;z-index:2;">
+                    <div class="avatar xl" style="background:rgba(255,255,255,0.15);font-size:1.5rem;">
+                        ${getInitials(p.name)}
+                    </div>
+                    <div style="flex:1;">
+                        <h3 style="font-size:1.4rem;margin-bottom:4px;">${p.name}</h3>
+                        <p class="text-muted">${p.email} ${p.phone ? '· ' + p.phone : ''}</p>
+                    </div>
+                    <div class="badge badge-success" style="background:rgba(34,197,94,0.2);color:#86efac;border-color:rgba(34,197,94,0.3);">
+                        ● Consent Active
+                    </div>
+                </div>
+                <div class="patient-info-grid">
+                    <div class="patient-info-item">
+                        <label>Date of Birth</label>
+                        <span>${formatDate(p.date_of_birth)}</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <label>Gender</label>
+                        <span>${p.gender || '—'}</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <label>Blood Group</label>
+                        <span>${p.blood_group || '—'}</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <label>Allergies</label>
+                        <span>${(data.allergies || []).map(a => a.allergen).join(', ') || 'None reported'}</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <label>Emergency Contact</label>
+                        <span>${p.emergency_contact || '—'}</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <label>Total Records</label>
+                        <span>${data.total_records}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('recordCount').textContent = `${allRecords.length} records`;
+            renderTimeline(allRecords);
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // Render Timeline
+    function renderTimeline(records) {
+        const container = document.getElementById('timelineContainer');
+
+        if (records.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:60px 20px;color:var(--gray-400);">
+                    <div style="font-size:3rem;margin-bottom:12px;">📋</div>
+                    <p>No medical records found.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = records.map((r, i) => `
+            <div class="timeline-item" style="animation-delay:${i * 0.08}s;" onclick="showDetail('${r.id}')">
+                <div class="timeline-dot ${r.record_type}">
+                    ${recordTypeIcon(r.record_type)}
+                </div>
+                <div class="timeline-card">
+                    <div class="timeline-date">${formatDate(r.record_date)}</div>
+                    <div class="timeline-title">${r.title}</div>
+                    ${r.description ? `<div class="timeline-detail"><p>${r.description}</p></div>` : ''}
+                    <div class="timeline-meta">
+                        <span class="badge badge-primary">${r.record_type}</span>
+                        ${severityBadge(r.severity)}
+                        ${r.doctor ? `<span class="badge badge-gray">Dr. ${r.doctor.name}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Filter by type
+    document.getElementById('filterType').addEventListener('change', (e) => {
+        const type = e.target.value;
+        const filtered = type ? allRecords.filter(r => r.record_type === type) : allRecords;
+        renderTimeline(filtered);
+    });
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const filtered = allRecords.filter(r =>
+            r.title.toLowerCase().includes(q) ||
+            (r.description || '').toLowerCase().includes(q) ||
+            (r.diagnosis || '').toLowerCase().includes(q)
+        );
+        renderTimeline(filtered);
+    });
+
+    // Show record detail
+    function showDetail(recordId) {
+        const r = allRecords.find(x => x.id === recordId);
+        if (!r) return;
+
+        document.getElementById('detailTitle').textContent = r.title;
+        document.getElementById('detailBody').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                <div>
+                    <div class="text-sm text-muted mb-sm">Type</div>
+                    <span class="badge badge-primary">${r.record_type}</span>
+                </div>
+                <div>
+                    <div class="text-sm text-muted mb-sm">Date</div>
+                    <span class="font-semibold">${formatDate(r.record_date)}</span>
+                </div>
+                <div>
+                    <div class="text-sm text-muted mb-sm">Severity</div>
+                    ${severityBadge(r.severity)}
+                </div>
+                <div>
+                    <div class="text-sm text-muted mb-sm">Doctor</div>
+                    <span class="font-semibold">${r.doctor ? 'Dr. ' + r.doctor.name : 'Self-reported'}</span>
+                </div>
+            </div>
+            ${r.diagnosis ? `
+                <div class="mb-md">
+                    <div class="text-sm font-semibold mb-sm" style="color:var(--primary-600);">Diagnosis</div>
+                    <div style="background:var(--gray-50);padding:14px;border-radius:var(--radius-md);font-size:0.9rem;line-height:1.7;">${r.diagnosis}</div>
+                </div>
+            ` : ''}
+            ${r.prescription ? `
+                <div class="mb-md">
+                    <div class="text-sm font-semibold mb-sm" style="color:var(--accent-600);">Prescription</div>
+                    <div style="background:var(--gray-50);padding:14px;border-radius:var(--radius-md);font-size:0.9rem;line-height:1.7;font-family:var(--font-mono);">${r.prescription}</div>
+                </div>
+            ` : ''}
+            ${r.documents && r.documents.length > 0 ? `
+                <div>
+                    <div class="text-sm font-semibold mb-sm">Attachments</div>
+                    ${r.documents.map(d => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--gray-50);border-radius:var(--radius-sm);margin-bottom:6px;">
+                            <span>📎</span>
+                            <span class="text-sm">${d.file_name}</span>
+                            <span class="text-xs text-muted" style="margin-left:auto;">${(d.file_size_bytes / 1024).toFixed(1)} KB</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        `;
+        Modal.open('recordDetailModal');
+    }
+
+    // Add Record
+    async function addRecord() {
+        if (!currentPatientId) return Toast.show('No patient selected', 'error');
+
+        const body = {
+            record_type: document.getElementById('newRecordType').value,
+            title: document.getElementById('newRecordTitle').value,
+            record_date: document.getElementById('newRecordDate').value,
+            severity: document.getElementById('newRecordSeverity').value,
+            diagnosis: document.getElementById('newRecordDiagnosis').value,
+            prescription: document.getElementById('newRecordPrescription').value,
+        };
+
+        if (!body.title || !body.record_date) return Toast.show('Title and date required', 'warning');
+
+        try {
+            const data = await API.post(`/api/doctor/patients/${currentPatientId}/records`, body);
+            if (data) {
+                Toast.show('Record added successfully', 'success');
+                Modal.close('addRecordModal');
+                loadTimeline(currentPatientId);
+            }
+        } catch (err) {}
+    }
+
+    // AI Summary
+    async function generateAISummary() {
+        if (!currentPatientId) return;
+        try {
+            const data = await API.post(`/api/doctor/patients/${currentPatientId}/ai-summary`, {});
+            if (data && data.summary) {
+                const box = document.getElementById('aiSummaryBox');
+                const list = document.getElementById('aiSummaryList');
+                const points = data.summary.split('\n').filter(l => l.trim());
+                list.innerHTML = points.map(p => `<li>${p.replace('• ', '')}</li>`).join('');
+                box.style.display = 'block';
+                Toast.show('AI summary generated!', 'success');
+            }
+        } catch (err) {}
+    }
+</script>
+{% endblock %}

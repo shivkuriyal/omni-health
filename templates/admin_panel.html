@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+{% block title %}Super Admin SaaS Control Panel — OmniHealth-Rec{% endblock %}
+
+{% block body %}
+<div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">⚡</div>
+            <div class="sidebar-brand-text">Omni<span>SaaS</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-label">Platform SaaS Control</div>
+            <a class="sidebar-link active" href="#analyticsTab" onclick="switchTab('analyticsTab')">
+                <span class="icon">📊</span> Platform Metrics
+            </a>
+            <a class="sidebar-link" href="#hospitalsTab" onclick="switchTab('hospitalsTab')">
+                <span class="icon">🏥</span> Onboarded Hospitals
+            </a>
+            <a class="sidebar-link" href="#plansTab" onclick="switchTab('plansTab')">
+                <span class="icon">💎</span> Subscription Tiers
+            </a>
+            <a class="sidebar-link" href="#invoicesTab" onclick="switchTab('invoicesTab')">
+                <span class="icon">💰</span> Global Invoices
+            </a>
+            <a class="sidebar-link" href="#securityTab" onclick="switchTab('securityTab')">
+                <span class="icon">🛡️</span> Security & Audits
+            </a>
+            <div class="sidebar-section-label">Account</div>
+            <a class="sidebar-link" onclick="API.logout()">
+                <span class="icon">🚪</span> Sign Out
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="avatar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;">SA</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name" id="superAdminName">Platform Admin</div>
+                    <div class="sidebar-user-role">Super Administrator</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="btn btn-ghost btn-icon" onclick="toggleSidebar()" style="display:none;" id="menuBtn">☰</button>
+                <div>
+                    <div class="topbar-title">Super Admin Portal</div>
+                    <div class="topbar-breadcrumb">
+                        <span>Multi-Tenant Platform</span>
+                        <span class="sep">›</span>
+                        <span id="breadcrumbSection">Platform Metrics</span>
+                    </div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-secondary btn-sm" onclick="Modal.open('planModal')">
+                    + New Plan
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="Modal.open('onboardHospitalModal')">
+                    + Onboard Hospital
+                </button>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Tab 1: Analytics & Metrics -->
+            <div id="analyticsTab" class="tab-pane active">
+                <div class="stats-grid mb-lg animate-fade-up">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Total Hospitals</span>
+                            <span class="stat-card-icon">🏥</span>
+                        </div>
+                        <div class="stat-card-value" id="metricTotalHospitals">0</div>
+                        <div class="stat-card-change positive" id="metricActiveHospitals">0 Active Subscriptions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Active Doctors</span>
+                            <span class="stat-card-icon">🩺</span>
+                        </div>
+                        <div class="stat-card-value" id="metricTotalDoctors">0</div>
+                        <div class="stat-card-change text-muted">Across all hospital tenants</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Universal Patients</span>
+                            <span class="stat-card-icon">👤</span>
+                        </div>
+                        <div class="stat-card-value" id="metricTotalPatients">0</div>
+                        <div class="stat-card-change positive">Lifelong Health IDs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-label">Platform Revenue</span>
+                            <span class="stat-card-icon">💵</span>
+                        </div>
+                        <div class="stat-card-value" id="metricTotalRevenue">$0.00</div>
+                        <div class="stat-card-change positive">Paid Subscriptions</div>
+                    </div>
+                </div>
+
+                <!-- Recent Hospitals Overview Table -->
+                <div class="card mb-lg animate-fade-up stagger-1">
+                    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <h3 style="margin:0;">Onboarded Hospital Tenants</h3>
+                        <button class="btn btn-primary btn-sm" onclick="Modal.open('onboardHospitalModal')">+ Onboard Hospital</button>
+                    </div>
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Hospital Name</th>
+                                        <th>Tenant Slug</th>
+                                        <th>Tier</th>
+                                        <th>Theme</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="overviewHospitalsBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Onboarded Hospitals -->
+            <div id="hospitalsTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">Hospital Tenant Directory</h3>
+                        <p class="text-sm text-muted">Manage hospital subscriptions, customize their limits, or offboard tenants</p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="Modal.open('onboardHospitalModal')">+ Onboard New Hospital</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Hospital</th>
+                                        <th>Slug</th>
+                                        <th>Contact Email</th>
+                                        <th>Phone</th>
+                                        <th>Plan Tier</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allHospitalsTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Subscription Plans -->
+            <div id="plansTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">SaaS Subscription Tiers</h3>
+                        <p class="text-sm text-muted">Define pricing models, doctor quotas, and feature flags for hospital customers</p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="Modal.open('planModal')">+ Add Subscription Tier</button>
+                </div>
+
+                <div id="plansGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:20px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Tab 4: Global Invoices -->
+            <div id="invoicesTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">Platform Billing & Invoices</h3>
+                        <p class="text-sm text-muted">Audit financial transactions across all hospital subscriptions</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice ID</th>
+                                        <th>Hospital ID</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Billing Period</th>
+                                        <th>Paid Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="globalInvoicesBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Security & Audit Feed -->
+            <div id="securityTab" class="tab-pane hidden">
+                <div class="flex items-center justify-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">Platform Security & Access Audit Trail</h3>
+                        <p class="text-sm text-muted">Real-time HIPAA & ABDM compliance audit events across all hospital tenants</p>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="loadSecurityAudits()">🔄 Refresh Logs</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Actor Role</th>
+                                        <th>Action Taken</th>
+                                        <th>Target Resource</th>
+                                        <th>IP / Metadata</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="securityAuditBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Onboard Hospital Modal -->
+<div class="modal-overlay" id="onboardHospitalModal">
+    <div class="modal" style="max-width:620px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Onboard New Hospital Tenant</h3>
+            <button class="modal-close" onclick="Modal.close('onboardHospitalModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Hospital Name *</label>
+                    <input type="text" class="form-input" id="onboardName" placeholder="e.g., Boston Children's Health" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unique Subdomain / Slug *</label>
+                    <input type="text" class="form-input" id="onboardSlug" placeholder="e.g., boston-childrens" required>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Contact Email</label>
+                    <input type="email" class="form-input" id="onboardEmail" placeholder="admin@hospital.org">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Phone</label>
+                    <input type="tel" class="form-input" id="onboardPhone" placeholder="+1-800-555-0100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subscription Tier *</label>
+                <select class="form-select" id="onboardPlan" required>
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-md);padding:14px;margin:16px 0;">
+                <div class="font-semibold text-sm mb-sm" style="color:var(--primary-700);">Initial Hospital Admin Account</div>
+                <div class="form-group">
+                    <label class="form-label">Admin Full Name *</label>
+                    <input type="text" class="form-input" id="onboardAdminName" placeholder="e.g., Dr. Eleanor Vance" required>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Admin Email *</label>
+                        <input type="email" class="form-input" id="onboardAdminEmail" placeholder="eleanor@hospital.org" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Admin Password *</label>
+                        <input type="password" class="form-input" id="onboardAdminPass" placeholder="••••••••" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Accent Theme Color</label>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="color" id="onboardColor" value="#0ea5e9" style="width:40px;height:36px;border:none;cursor:pointer;">
+                    <span class="text-sm text-muted">Theme will be customized for this tenant</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="Modal.close('onboardHospitalModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitOnboardHospital()" id="onboardSubmitBtn">Onboard & Provision Tenant</button>
+        </div>
+    </div>
+</div>
+
+<!-- Plan Modal -->
+<div class="modal-overlay" id="planModal">
+    <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Create Subscription Tier</h3>
+            <button class="modal-close" onclick="Modal.close('planModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Plan Name *</label>
+                <input type="text" class="form-input" id="newPlanName" placeholder="e.g., Growth Tier" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="newPlanDesc" placeholder="Plan target audience and capabilities…" style="min-height:60px;"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Price Monthly ($) *</label>
+                    <input type="number" class="form-input" id="newPlanPrice" value="99.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Doctors *</label>
+                    <input type="number" class="form-input" id="newPlanMaxDocs" value="10" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Monthly Patient Limit</label>
+                <input type="number" class="form-input" id="newPlanMaxPatients" value="1000">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="Modal.close('planModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitPlan()">Save Subscription Tier</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let plansList = [];
+    let hospitalsList = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!requireAuth(['super_admin'])) return;
+        await loadAnalytics();
+        await loadPlans();
+        await loadHospitals();
+        await loadInvoices();
+        await loadSecurityAudits();
+    });
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-pane').forEach(el => {
+            el.classList.add('hidden');
+            el.classList.remove('active');
+        });
+        const target = document.getElementById(tabId);
+        if (target) {
+            target.classList.remove('hidden');
+            target.classList.add('active');
+        }
+
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        const activeLink = document.querySelector(`.sidebar-link[href="#${tabId}"]`);
+        if (activeLink) activeLink.classList.add('active');
+
+        const titles = {
+            analyticsTab: 'Platform Metrics & Overview',
+            hospitalsTab: 'Onboarded Hospital Tenants',
+            plansTab: 'Subscription Pricing Tiers',
+            invoicesTab: 'Global Invoices & Financials',
+            securityTab: 'Platform Security & Audit Feed'
+        };
+        document.getElementById('breadcrumbSection').textContent = titles[tabId] || 'SaaS';
+    }
+
+    async function loadAnalytics() {
+        try {
+            const data = await API.get('/api/admin/analytics');
+            if (!data) return;
+
+            document.getElementById('metricTotalHospitals').textContent = data.total_hospitals;
+            document.getElementById('metricActiveHospitals').textContent = `${data.active_hospitals} Active Subscriptions`;
+            document.getElementById('metricTotalDoctors').textContent = data.total_doctors;
+            document.getElementById('metricTotalPatients').textContent = data.total_patients;
+            document.getElementById('metricTotalRevenue').textContent = `$${data.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        } catch (err) {}
+    }
+
+    async function loadPlans() {
+        try {
+            const data = await API.get('/api/admin/plans');
+            if (!data) return;
+            plansList = data.plans || [];
+
+            // Populate onboard select
+            const sel = document.getElementById('onboardPlan');
+            sel.innerHTML = plansList.map(p => `
+                <option value="${p.id}">${p.name} ($${p.price_monthly}/mo - up to ${p.max_doctors} doctors)</option>
+            `).join('');
+
+            // Populate cards
+            const grid = document.getElementById('plansGrid');
+            grid.innerHTML = plansList.map(p => `
+                <div class="card" style="border-top:4px solid var(--primary-500);">
+                    <div class="card-body">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <h3 style="margin:0;">${p.name}</h3>
+                            <span class="badge ${p.is_active ? 'badge-success' : 'badge-gray'}">${p.is_active ? 'Active' : 'Inactive'}</span>
+                        </div>
+                        <div style="font-size:1.8rem;font-weight:700;margin-bottom:6px;">$${p.price_monthly.toFixed(2)}<span style="font-size:0.85rem;font-weight:400;color:var(--gray-500);"> / mo</span></div>
+                        <p class="text-sm text-muted mb-md">${p.description || ''}</p>
+                        <div style="font-size:0.85rem;line-height:1.8;background:var(--gray-50);padding:12px;border-radius:var(--radius-sm);">
+                            <div><strong>Doctors:</strong> up to ${p.max_doctors}</div>
+                            <div><strong>Patients:</strong> up to ${p.max_patients_monthly} / mo</div>
+                            <div><strong>Whitelabel:</strong> ${p.features && p.features.whitelabel ? '✓ Yes' : '✕ No'}</div>
+                            <div><strong>AI Summary:</strong> ${p.features && p.features.ai_summary ? '✓ Yes' : '✕ No'}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (err) {}
+    }
+
+    async function loadHospitals() {
+        try {
+            const data = await API.get('/api/admin/hospitals');
+            if (!data) return;
+            hospitalsList = data.hospitals || [];
+
+            const renderRow = (h) => `
+                <tr>
+                    <td class="font-semibold">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${h.accent_color || '#0ea5e9'};"></span>
+                            <span>${h.name}</span>
+                        </div>
+                    </td>
+                    <td><code>${h.slug}</code></td>
+                    <td><span class="badge badge-primary">${h.plan ? h.plan.name : 'Custom'}</span></td>
+                    <td><span class="badge" style="background:${h.accent_color || '#0ea5e9'};color:#fff;">${h.accent_color || '#0ea5e9'}</span></td>
+                    <td><span class="badge ${h.subscription_status === 'active' ? 'badge-success' : 'badge-danger'}">${h.subscription_status}</span></td>
+                    <td>
+                        ${h.subscription_status === 'active' ? `
+                            <button class="btn btn-ghost btn-sm" onclick="offboardHospital('${h.id}')" style="color:var(--danger-600);padding:4px 8px;">
+                                Suspend
+                            </button>
+                        ` : '<span class="text-xs text-muted">Suspended</span>'}
+                    </td>
+                </tr>
+            `;
+
+            document.getElementById('overviewHospitalsBody').innerHTML = hospitalsList.slice(0, 5).map(renderRow).join('');
+
+            document.getElementById('allHospitalsTableBody').innerHTML = hospitalsList.map(h => `
+                <tr>
+                    <td class="font-semibold">${h.name}</td>
+                    <td><code>${h.slug}</code></td>
+                    <td>${h.email || '—'}</td>
+                    <td>${h.phone || '—'}</td>
+                    <td><span class="badge badge-primary">${h.plan ? h.plan.name : 'Custom'}</span></td>
+                    <td><span class="badge ${h.subscription_status === 'active' ? 'badge-success' : 'badge-danger'}">${h.subscription_status}</span></td>
+                    <td>
+                        ${h.subscription_status === 'active' ? `
+                            <button class="btn btn-ghost btn-sm" onclick="offboardHospital('${h.id}')" style="color:var(--danger-600);padding:4px 8px;">
+                                Offboard
+                            </button>
+                        ` : '<span class="text-xs text-muted">Suspended</span>'}
+                    </td>
+                </tr>
+            `).join('');
+
+        } catch (err) {}
+    }
+
+    async function submitOnboardHospital() {
+        const name = document.getElementById('onboardName').value.trim();
+        const slug = document.getElementById('onboardSlug').value.trim();
+        const admin_name = document.getElementById('onboardAdminName').value.trim();
+        const admin_email = document.getElementById('onboardAdminEmail').value.trim();
+        const admin_password = document.getElementById('onboardAdminPass').value.trim();
+
+        if (!name || !slug || !admin_name || !admin_email || !admin_password) {
+            return Toast.show('Please fill in all required fields', 'warning');
+        }
+
+        const btn = document.getElementById('onboardSubmitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Provisioning…';
+
+        try {
+            const body = {
+                name, slug, admin_name, admin_email, admin_password,
+                plan_id: document.getElementById('onboardPlan').value,
+                email: document.getElementById('onboardEmail').value.trim(),
+                phone: document.getElementById('onboardPhone').value.trim(),
+                accent_color: document.getElementById('onboardColor').value
+            };
+
+            const data = await API.post('/api/admin/hospitals', body);
+            if (data && data.hospital) {
+                Toast.show(`Hospital ${name} onboarded successfully!`, 'success');
+                Modal.close('onboardHospitalModal');
+                document.getElementById('onboardName').value = '';
+                document.getElementById('onboardSlug').value = '';
+                document.getElementById('onboardAdminName').value = '';
+                document.getElementById('onboardAdminEmail').value = '';
+                document.getElementById('onboardAdminPass').value = '';
+                await loadHospitals();
+                await loadAnalytics();
+            }
+        } catch (err) {} finally {
+            btn.disabled = false;
+            btn.textContent = 'Onboard & Provision Tenant';
+        }
+    }
+
+    async function offboardHospital(id) {
+        if (!confirm('Are you sure you want to offboard/suspend this hospital?')) return;
+        try {
+            await API.delete(`/api/admin/hospitals/${id}`);
+            Toast.show('Hospital tenant suspended', 'info');
+            await loadHospitals();
+            await loadAnalytics();
+        } catch (err) {}
+    }
+
+    async function submitPlan() {
+        const name = document.getElementById('newPlanName').value.trim();
+        const price = parseFloat(document.getElementById('newPlanPrice').value);
+        const maxDocs = parseInt(document.getElementById('newPlanMaxDocs').value);
+
+        if (!name || isNaN(price) || isNaN(maxDocs)) {
+            return Toast.show('Plan name, price, and doctor quota required', 'warning');
+        }
+
+        try {
+            await API.post('/api/admin/plans', {
+                name,
+                price_monthly: price,
+                max_doctors: maxDocs,
+                max_patients_monthly: parseInt(document.getElementById('newPlanMaxPatients').value) || 1000,
+                description: document.getElementById('newPlanDesc').value,
+                features: { whitelabel: true, ai_summary: true, priority_support: true }
+            });
+            Toast.show('Subscription plan created', 'success');
+            Modal.close('planModal');
+            await loadPlans();
+        } catch (err) {}
+    }
+
+    async function loadInvoices() {
+        try {
+            const data = await API.get('/api/admin/invoices');
+            if (!data) return;
+            const tbody = document.getElementById('globalInvoicesBody');
+            const invoices = data.invoices || [];
+
+            if (invoices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No invoices generated yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = invoices.map(i => `
+                <tr>
+                    <td><code>${i.id.slice(0, 8)}</code></td>
+                    <td><code>${i.hospital_id.slice(0, 8)}</code></td>
+                    <td class="font-semibold">$${i.amount.toFixed(2)} ${i.currency}</td>
+                    <td><span class="badge ${i.status === 'paid' ? 'badge-success' : 'badge-warning'}">${i.status.toUpperCase()}</span></td>
+                    <td>${formatDate(i.billing_period_start)} – ${formatDate(i.billing_period_end)}</td>
+                    <td>${formatDate(i.paid_at) || 'Pending'}</td>
+                </tr>
+            `).join('');
+
+        } catch (err) {}
+    }
+
+    async function loadSecurityAudits() {
+        try {
+            const data = await API.get('/api/admin/audit-logs');
+            if (!data) return;
+            const logs = data.audit_logs || [];
+            const tbody = document.getElementById('securityAuditBody');
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No security events recorded.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(l => `
+                <tr>
+                    <td>${formatDateTime(l.created_at)}</td>
+                    <td><span class="badge badge-primary">${l.user_role}</span></td>
+                    <td class="font-semibold">${l.action}</td>
+                    <td>${l.resource_type ? `${l.resource_type}:${(l.resource_id || '').slice(0, 8)}` : '—'}</td>
+                    <td class="text-xs text-muted">${l.metadata ? JSON.stringify(l.metadata) : (l.ip_address || '—')}</td>
+                </tr>
+            `).join('');
+
+        } catch (err) {}
+    }
+</script>
+{% endblock %}

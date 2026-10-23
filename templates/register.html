@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Create Account — OmniHealth-Rec{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card" style="max-width:480px;">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">🏥</div>
+            <div class="auth-brand-text">Omni<span>Health</span></div>
+        </div>
+        <h2 class="auth-title">Create your account</h2>
+        <p class="auth-subtitle">Start managing your lifelong health records today</p>
+
+        <form id="registerForm">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="regName" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="regPhone" placeholder="+91 98765 43210">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="regEmail" placeholder="you@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="regPassword" placeholder="Minimum 8 characters" required minlength="8">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="form-input" id="regDob">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
+                    <select class="form-select" id="regGender">
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Blood Group</label>
+                    <select class="form-select" id="regBlood">
+                        <option value="">Select</option>
+                        <option>A+</option><option>A-</option>
+                        <option>B+</option><option>B-</option>
+                        <option>AB+</option><option>AB-</option>
+                        <option>O+</option><option>O-</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full btn-lg" id="regBtn">
+                Create Account
+            </button>
+        </form>
+
+        <p class="auth-footer-text">
+            Already have an account? <a href="/login">Sign in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('regBtn');
+        btn.disabled = true;
+        btn.textContent = 'Creating account…';
+
+        try {
+            const data = await API.post('/api/auth/register', {
+                name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value,
+                phone: document.getElementById('regPhone').value,
+                date_of_birth: document.getElementById('regDob').value || null,
+                gender: document.getElementById('regGender').value || null,
+                blood_group: document.getElementById('regBlood').value || null,
+            });
+
+            if (data) {
+                API.saveAuth(data.access_token, data.user, 'patient');
+                Toast.show('Account created successfully!', 'success');
+                setTimeout(() => { window.location.href = '/patient/records'; }, 600);
+            }
+        } catch (err) {
+            // handled
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+    });
+</script>
+{% endblock %}
